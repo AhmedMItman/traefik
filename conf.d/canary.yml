@@ -1,0 +1,10 @@
+http:
+  services:
+    canary:
+      weighted:
+        services:
+          # Load balancing between Traefik services
+          - name: whoami5@docker
+            weight: 10
+          - name: whoami6@docker
+            weight: 1

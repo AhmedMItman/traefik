@@ -1,0 +1,44 @@
+--tracing.jaeger=true --tracing.jaeger.samplingServerURL=http://localhost:5778/sampling --tracing.jaeger.samplingType=const --tracing.jaeger.samplingParam=1.0  --tracing.jaeger.localAgentHostPort=127.0.0.1:6831 --tracing.jaeger.gen128Bit --tracing.jaeger.propagation=jaeger --tracing.jaeger.traceContextHeaderName=uber-trace-id --tracing.jaeger.collector.endpoint=http://127.0.0.1:14268/api/traces?format=jaeger.thrift --tracing.jaeger.collector.user=my-user --tracing.jaeger.collector.password=my-password
+
+
+jaeger-collector:
+      image: jaegertracing/jaeger-collector
+      command: ["--cassandra.keyspace=jaeger_v1_dc1", "--cassandra.servers=cassandra", "--collector.zipkin.http-port=9411"]
+      ports:
+        - "14269"
+        - "14268:14268"
+        - "14250"
+        - "9411:9411"
+      restart: on-failure
+      depends_on:
+        - cassandra-schema
+
+  jaeger-query:
+    image: jaegertracing/jaeger-query
+    command: ["--cassandra.keyspace=jaeger_v1_dc1", "--cassandra.servers=cassandra"]
+    ports:
+      - "16686:16686"
+      - "16687"
+    restart: on-failure
+    depends_on:
+      - cassandra-schema
+
+  jaeger-agent:
+    image: jaegertracing/jaeger-agent
+    command: ["--reporter.grpc.host-port=jaeger-collector:14250"]
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+    restart: on-failure
+    depends_on:
+      - jaeger-collector
+
+  cassandra:
+    image: cassandra:3.9
+
+  cassandra-schema:
+    image: jaegertracing/jaeger-cassandra-schema
+    depends_on:
+      - cassandra

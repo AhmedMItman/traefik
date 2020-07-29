@@ -1,0 +1,152 @@
+version: '3.7'
+
+services:
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.2
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker --providers.file.directory=./conf.d
+    # http://localhost:8080/api/rawdata
+    #  --providers.file.filename=/home/ahmeditman/traefik/conf.d/canary.yml --providers.file.watch=true
+    # command: --api.insecure=true --providers.docker --tracing.zipkin=true --tracing.zipkin.httpEndpoint=http://localhost:9411/api/v2/spans --tracing.zipkin.sameSpan=true --tracing.zipkin.id128Bit=false --tracing.zipkin.sampleRate=0.2 --metrics=true --metrics.prometheus=true --metrics.prometheus.addEntryPointsLabels=true --metrics.prometheus.addServicesLabels=true --entryPoints.metrics.address=:8082 --metrics.prometheus.entryPoint=metrics
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./conf.d/canary.yml:/conf.d/canary.yml
+    # configs:
+    #   - source: canary-config
+    #     target: /conf.d/canary.yml
+  # zipkin:
+  #   image: openzipkin/zipkin:latest
+  #   container_name: zipkin
+  #   ports:
+  #     - "9411:9411"
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   ports:
+  #   - 9090:9090
+  #   command:
+  #   - --config.file=/etc/prometheus/prometheus.yml
+  #   # volumes:
+  #   # - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #   depends_on:
+  #   - cadvisor
+  # cadvisor:
+  #   image: gcr.io/google-containers/cadvisor:latest
+  #   container_name: cadvisor
+  #   ports:
+  #   - 8055:8080
+  #   volumes:
+  #   - /:/rootfs:ro
+  #   - /var/run:/var/run:rw
+  #   - /sys:/sys:ro
+  #   - /var/lib/docker/:/var/lib/docker:ro
+  #   depends_on:
+  #   - redis
+  # redis:
+  #   image: redis:latest
+  #   container_name: redis
+  #   ports:
+  #   - 6379:6379
+  # whoami:
+  #   # A container that exposes an API to show its IP address
+  #   image: containous/whoami
+  #   labels:
+  #     # Define Router to accept request to it's Services  
+  #     - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+  #     # 1. Normal
+      
+  #     # 2. Authentication 
+  #     # - "traefik.http.routers.whoami.middlewares=test-auth@docker"
+  #     #  # echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+  #     # - "traefik.http.middlewares.test-auth.basicauth.users=itman:$$apr1$$c.qajeuj$$2kytu9ypZZO5lAMI9eiDO0"
+  #     # - "traefik.http.middlewares.test-auth.basicauth.headerField=X-WebAuth-User"
+      
+  #     # 3. Add prefix
+  #     # - "traefik.http.routers.whoami.middlewares=foo-add-prefix@docker"
+  #     # # Create a middleware named `foo-add-prefix`
+  #     # - "traefik.http.middlewares.foo-add-prefix.addprefix.prefix=/foo"
+
+  #     # 4. Strip prefix
+  #     # - "traefik.http.routers.whoami.middlewares=test-stripprefix@docker"
+  #     # - "traefik.http.middlewares.test-stripprefix.stripprefix.prefixes=/foobar"
+
+  # whoami2:
+  #   # A container that exposes an API to show its IP address
+  #   image: containous/whoami
+  #   labels:
+  #     # forwardauth using github
+  #     # Replic
+  #     - "traefik.http.routers.whoami2.rule=Host(`whoami2.docker.localhost`)"
+      
+  #     - "traefik.http.routers.whoami2.middlewares=test-auth@docker"
+
+  #     - "traefik.http.middlewares.test-auth.forwardauth.address=https://github.com/login/oauth/authorize"
+  #     - "traefik.http.middlewares.test-auth.forwardauth.tls.cert=path/to/foo.cert"
+  #     - "traefik.http.middlewares.test-auth.forwardauth.tls.key=path/to/foo.key"
+
+  # whoami3:
+  #   # A container that exposes an API to show its IP address
+  #   image: containous/whoami
+  #   labels:
+  #      # Rule prefix
+  #      # Custom request headers
+  #     - "traefik.http.routers.whoami3.rule=Path(`/whoami3`)"
+  #     - "traefik.http.routers.whoami3.middlewares=testHeader@docker,testHeader2@docker"
+  #     - "traefik.http.middlewares.testHeader.headers.customrequestheaders.X-Script-COMPANY=MYCOMPANY"
+  #     - "traefik.http.middlewares.testHeader2.headers.customresponseheaders.X-Custom-Response-Header=Transport"  
+
+  whoami4:
+    # A container that exposes an API to show its IP address
+    image: containous/whoami
+    labels:
+      - "traefik.http.routers.whoami4.rule=Host(`whoami4.docker.localhost`)"
+      # 1. Replace Path 
+      # - "traefik.http.routers.whoami4.middlewares=test-replacepath@docker"
+      # # old Path X-Replaced-Path
+      # - "traefik.http.middlewares.test-replacepath.replacepath.path=/MYCOMPANY"
+
+      # 2. NetworkErrorRatio, ResponseCodeRatio, LatencyAtQuantileMS
+      # - "traefik.http.routers.whoami4.middlewares=latency-check@docker"
+      # - "traefik.http.middlewares.latency-check.circuitbreaker.expression=NetworkErrorRatio() > 0.30"
+
+      # 3. ssl redirect
+      # - "traefik.http.routers.whoami4.middlewares=ssl@docker"
+      # - "traefik.http.middlewares.ssl.headers.sslredirect=true"
+      
+      # 4. WhiteList
+      # - "traefik.http.routers.whoami4.middlewares=test-ipwhitelist@docker"
+      # - "traefik.http.middlewares.test-ipwhitelist.ipwhitelist.sourcerange=172.31.0.4"
+
+      # 5. High Load
+      # - "traefik.http.routers.whoami4.middlewares=test-inflightreq@docker"
+      # - "traefik.http.middlewares.test-inflightreq.inflightreq.amount=1"
+      # # output: max connections reached: 1
+      # # for ((i=1;i<=1000;i++)); do   curl -v --header "Connection: keep-alive" "whoami4.docker.localhost"; done
+
+  whoami5:
+    # A container that exposes an API to show its IP address
+    image: containous/whoami
+    labels:
+      - "traefik.http.routers.whoami5.rule=Host(`canary.docker.localhost`)"
+      # Canary approach
+      - "traefik.http.routers.whoami5.service=canary@file"
+      - "traefik.http.services.whoami5.loadbalancer.server.port=80"
+      # - "traefik.http.services.whoami5.loadbalancer.healthcheck.path=/foo"
+      
+  whoami6:
+    # A container that exposes an API to show its IP address
+    image: containous/whoami
+    labels:
+      - "traefik.http.services.whoami6.loadbalancer.server.port=80"
+
+# configs:
+#   canary-config:
+#     name: canary-config
+#     file: ./conf.d/canary.yml
